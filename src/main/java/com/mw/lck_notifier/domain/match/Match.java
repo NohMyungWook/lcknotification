@@ -56,4 +56,9 @@ public class Match {
         m.status = MatchStatus.SCHEDULED;
         return m;
     }
+
+    public void start() {
+        this.status = MatchStatus.IN_PROGRESS;
+    }
+
 }
