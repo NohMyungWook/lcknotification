@@ -44,7 +44,7 @@ public class Match {
             Team b,
             int bestOf,
             int order,
-            LocalDateTime startTimeUtc
+            LocalDateTime startTimeKst
     ) {
         Match m = new Match();
         m.matchDay = day;
@@ -52,7 +52,7 @@ public class Match {
         m.teamB = b;
         m.bestOf = bestOf;
         m.matchOrder = order;
-        m.startTime = startTimeUtc;
+        m.startTime = startTimeKst;
         m.status = MatchStatus.SCHEDULED;
         return m;
     }

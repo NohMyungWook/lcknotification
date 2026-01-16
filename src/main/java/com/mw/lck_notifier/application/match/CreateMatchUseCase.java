@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.stream.IntStream;
 
 @Service
@@ -61,19 +60,14 @@ public class CreateMatchUseCase {
         MatchDay matchDay = matchDayRepository.findByMatchDate(date)
                 .orElseGet(() -> matchDayRepository.save(MatchDay.of(date)));
 
-        // 3. 시간 저장 시 KST -> UTC 변환
-        LocalDateTime startUtc = startTimeKst.atZone(ZoneOffset.ofHours(9))
-                .withZoneSameInstant(ZoneOffset.UTC)
-                .toLocalDateTime();
-
-        // 4. Match 생성 (Team 엔티티를 그대로 넘김)
+        // 3. Match 생성 (Team 엔티티를 그대로 넘김)
         Match match = Match.schedule(
                 matchDay,
                 teamA,
                 teamB,
                 bestOf,
                 order,
-                startUtc
+                startTimeKst
         );
 
         matchRepository.save(match);

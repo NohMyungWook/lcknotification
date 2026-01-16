@@ -1,5 +1,6 @@
 package com.mw.lck_notifier.application.scheduler;
 
+import com.mw.lck_notifier.application.push.PushSender;
 import com.mw.lck_notifier.domain.device.Device;
 import com.mw.lck_notifier.domain.device.DeviceRepository;
 import com.mw.lck_notifier.domain.match.Match;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,29 +26,32 @@ public class MatchStartScheduler {
     private final SubscriptionRepository subscriptionRepository;
     private final NotificationLogRepository notificationLogRepository;
     private final DeviceRepository deviceRepository;
+    private final PushSender pushSender;
 
     public MatchStartScheduler(
             MatchRepository matchRepository,
             SubscriptionRepository subscriptionRepository,
             NotificationLogRepository notificationLogRepository,
-            DeviceRepository deviceRepository
+            DeviceRepository deviceRepository,
+            PushSender pushSender
     ) {
         this.matchRepository = matchRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.notificationLogRepository = notificationLogRepository;
         this.deviceRepository = deviceRepository;
+        this.pushSender = pushSender;
     }
 
     @Transactional
     @Scheduled(fixedDelay = 60000)   // 60초마다
     public void checkMatchStart() {
 
-        // 1. 현재 시간을 UTC로 계산
-        LocalDateTime nowUtc = LocalDateTime.now(ZoneOffset.UTC);
+        // 1. 현재 시간을 KST로 계산
+        LocalDateTime nowKst = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
 
         // 2. 시작 시간이 지났고 아직 경기 시작 안 된 매치 조회
         List<Match> matches = matchRepository
-                .findByStatusAndStartTimeLessThanEqual(MatchStatus.SCHEDULED, nowUtc);
+                .findByStatusAndStartTimeLessThanEqual(MatchStatus.SCHEDULED, nowKst);
 
         for (Match match : matches) {
 
@@ -57,11 +61,10 @@ public class MatchStartScheduler {
             matchRepository.save(match);
 
             // 4. 구독자 조회 (양 팀 모두)
-            Set<Long> deviceIdSet = new HashSet<>();
 
             List<Long> teamADeviceIds =
                     subscriptionRepository.findDeviceIdsByTeam(match.getTeamA().getId());
-            deviceIdSet.addAll(teamADeviceIds);
+            Set<Long> deviceIdSet = new HashSet<>(teamADeviceIds);
 
             List<Long> teamBDeviceIds =
                     subscriptionRepository.findDeviceIdsByTeam(match.getTeamB().getId());
@@ -73,10 +76,9 @@ public class MatchStartScheduler {
 
                 NotificationLog log = NotificationLog.matchStart(device, match);
                 notificationLogRepository.save(log);
-            }
 
-            // 6. (MVP) 여기까지가 "알림 생성" 단계.
-            //    실제 푸시는 나중에 pushService.sendMatchStart(device, match)로 분리 예정.
+                pushSender.sendMatchStart(device, match);
+            }
         }
     }
 }
