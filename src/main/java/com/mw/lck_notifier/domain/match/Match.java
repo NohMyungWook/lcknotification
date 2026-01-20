@@ -61,4 +61,18 @@ public class Match {
         this.status = MatchStatus.IN_PROGRESS;
     }
 
+    public void changeStatus(MatchStatus status) {
+        this.status = status;
+    }
+
+    public void finish() {
+        if (this.status != MatchStatus.IN_PROGRESS) {
+            throw new IllegalStateException(
+                    "Only IN_PROGRESS match can be finished. current=" + this.status
+            );
+        }
+        this.status = MatchStatus.FINISHED;
+    }
+
+
 }
