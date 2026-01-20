@@ -7,9 +7,6 @@ import lombok.Getter;
 public class UpdateSubscriptionRequest {
 
     @NotNull
-    private Long deviceId;
-
-    @NotNull
     private Long teamId;
 
     @NotNull
